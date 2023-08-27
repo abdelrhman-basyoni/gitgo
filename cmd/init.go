@@ -8,20 +8,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/abdelrhman-basyoni/gitgo/core"
 	"github.com/spf13/cobra"
-)
-
-var (
-	// metadata directory
-	gMetadataDir = ".gitgo"
-	/**
-	Chmod 0744 (chmod a+rwx,g-wx,o-wx,ug-s,-t) sets permissions so that, (U)ser / owner can read, can write and can execute. (G)roup can read, can't write and can't execute. (O)thers can read, can't write and can't execute.
-	*/
-	gDefaultPermissions = os.FileMode(0744)
-	gMetadataDirContent = []string{
-		"objects",
-		"refs",
-	}
 )
 
 // initCmd represents the init command
@@ -45,17 +33,17 @@ to quickly create a Cobra application.`,
 			os.Exit(1)
 		}
 		// Create the metadata directory  inside the current directory
-		path := strings.Join([]string{dir, gMetadataDir}, string(os.PathSeparator))
-		err = os.Mkdir(path, gDefaultPermissions)
+		path := strings.Join([]string{dir, core.GMetadataDir}, string(os.PathSeparator))
+		err = os.Mkdir(path, core.GDefaultPermissions)
 
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
 
-		for _, content := range gMetadataDirContent {
-			path := strings.Join([]string{dir, gMetadataDir, content}, string(os.PathSeparator))
-			err = os.Mkdir(path, gDefaultPermissions)
+		for _, content := range strings.Split(core.GMetadataDirContent, "|") {
+			path := strings.Join([]string{dir, core.GMetadataDir, content}, string(os.PathSeparator))
+			err = os.Mkdir(path, core.GDefaultPermissions)
 
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -63,7 +51,7 @@ to quickly create a Cobra application.`,
 			}
 
 		}
-		fmt.Fprint(os.Stdout, " Initialized gitgo repository in ", path, "\n")
+		fmt.Fprint(os.Stdout, "Initialized gitgo repository in ", path, "\n")
 	},
 }
 
