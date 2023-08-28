@@ -4,7 +4,9 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -38,9 +40,62 @@ to quickly create a Cobra application.`,
 			fmt.Fprintf(os.Stderr, "Error: failed to create new Database -  %v\n", err)
 			os.Exit(1)
 		}
-		blob := &core.Blob{}
-		if err := db.Store(blob); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: failed to create new Database -  %v\n", err)
+
+		//get the list of all the files in the root directory
+		files, err := os.ReadDir(rootDir)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: failed to read current directory -  %v\n", err)
+			os.Exit(1)
+		}
+		var entries []core.Entry
+
+		for _, file := range files {
+			if file.Name() == "." || file.Name() == ".." || file.IsDir() {
+				continue
+			}
+			file, err := os.Open(file.Name())
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: failed to open file -  %v\n", err)
+				os.Exit(1)
+			}
+			defer file.Close()
+
+			var content bytes.Buffer
+
+			_, err = io.Copy(&content, file)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: failed to cop file -  %v\n", err)
+				os.Exit(1)
+			}
+
+			blob := core.Blob{}
+			if err := blob.New(content.Bytes()); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: failed to create new Blob   -  %v\n", err)
+				os.Exit(1)
+			}
+
+			// store the blob in the database
+			if err := db.Store(&blob); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: failed to store the   Blob   -  %v\n", err)
+				os.Exit(1)
+			}
+			// create a new Entry
+			entry := core.Entry{}
+			if err := entry.New(blob.GetOid(), file.Name()); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: failed to create a new entry -  %v\n", err)
+				os.Exit(1)
+			}
+			entries = append(entries, entry)
+		}
+		//create a new tree
+		tree := core.Tree{}
+		if err := tree.New(entries); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: failed to create a new tree -  %v\n", err)
+			os.Exit(1)
+		}
+
+		if err := db.Store(&tree); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: failed to store the  tree -  %v\n", err)
 			os.Exit(1)
 		}
 	},

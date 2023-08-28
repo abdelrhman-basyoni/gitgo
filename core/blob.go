@@ -1,8 +1,9 @@
 package core
 
 type Blob struct {
+	// SHA-1 Object ID
 	oid []byte
-
+	// content
 	data []byte
 }
 

@@ -67,8 +67,8 @@ func (db *Database) writeObject(oid []byte, data []byte) error {
 	if err != nil {
 		return err
 	}
-
 	defer tmpFile.Close()
+
 	//compress the data with zlib deflate
 	var compressedData bytes.Buffer
 	zw := zlib.NewWriter(&compressedData)
