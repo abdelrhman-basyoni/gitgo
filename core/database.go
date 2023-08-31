@@ -23,7 +23,7 @@ type Database struct {
 
 func (db *Database) New(path string) error {
 	db.path = path
-	fmt.Printf("new Database %v", path)
+	fmt.Printf("new Database %v\n", path)
 
 	return nil
 }

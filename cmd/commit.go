@@ -9,10 +9,20 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/abdelrhman-basyoni/gitgo/core"
 	"github.com/spf13/cobra"
 )
+
+var (
+	message string
+)
+
+type ConfigVars struct {
+	G_AUTHOR_NAME  string
+	G_AUTHOR_EMAIL string
+}
 
 // commitCmd represents the commit command
 var commitCmd = &cobra.Command{
@@ -26,6 +36,16 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("commit called")
+		config := ConfigVars{
+			G_AUTHOR_NAME:  os.Getenv("G_AUTHOR_NAME"),
+			G_AUTHOR_EMAIL: os.Getenv("G_AUTHOR_EMAIL"),
+		}
+
+		author := core.Author{}
+		if err := author.New(config.G_AUTHOR_NAME, config.G_AUTHOR_EMAIL, time.Now()); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: failed while creating author- %v\n", err)
+			os.Exit(1)
+		}
 		rootDir, err := os.Getwd()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -93,11 +113,25 @@ to quickly create a Cobra application.`,
 			fmt.Fprintf(os.Stderr, "Error: failed to create a new tree -  %v\n", err)
 			os.Exit(1)
 		}
-
+		//store the tree
 		if err := db.Store(&tree); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: failed to store the  tree -  %v\n", err)
 			os.Exit(1)
 		}
+		//create new commit
+		commit := core.Commit{}
+		if err := commit.New(nil, tree.GetOid(), "Initial commit", author, author); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: failed to create a new commit - %v\n", err)
+			os.Exit(1)
+
+		}
+
+		//store the commit
+		if err := db.Store(&commit); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: failed to store  commit - %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("[(root_commit)%x] %s\n", commit.GetOid(), commit.GetMessage())
 	},
 }
 
@@ -113,4 +147,6 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// commitCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
+	commitCmd.Flags().StringVarP(&message, "message", "m", "", "Commit message")
 }
